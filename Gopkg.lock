@@ -8,14 +8,32 @@
   version = "v1.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/normegil/formats"
+  packages = ["error","time","url"]
+  revision = "d8e35934f96a18da970ae338566f8a58192edd3d"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/normegil/resterrors"
+  packages = ["."]
+  revision = "0ffb9e930a42a11c65b02b68673ba3d73551a697"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4a2ca7687512fff85cad79fb94dd54c4e2c235274052b8b5e671ddd4f5d2efc7"
+  inputs-digest = "ead4f6ebbb7d8c659907da7da3641627f86831f49a172998aedf7949a72f1582"
   solver-name = "gps-cdcl"
   solver-version = 1

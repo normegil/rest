@@ -23,8 +23,8 @@ func (r *Router) SetLogger(log Logger) {
 	r.logger = log
 }
 
-func (r *Router) Register(routes []Route) error {
-	for _, route := range routes {
+func (r *Router) Register(ctrl Controller) error {
+	for _, route := range ctrl.Routes() {
 		switch route.Method() {
 		case "HEAD":
 			r.Router.HEAD(route.Path(), route.Handler())
