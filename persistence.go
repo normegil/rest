@@ -26,7 +26,7 @@ type DAO interface {
 type IdentifiableEntity interface {
 	Entity
 	ID() Identifier
-	WithID(Identifier) IdentifiableEntity
+	WithID(Identifier) (IdentifiableEntity, error)
 }
 
 type Mapper interface {
@@ -180,9 +180,12 @@ func (d *DatabaseDAO) Set(entity IdentifiableEntity) (Identifier, error) {
 	if nil == id {
 		id, err := d.idGenerator.Generate(entity)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Error generating Identifier")
+			return nil, errors.Wrapf(err, "Generating Identifier")
 		}
-		entity = entity.WithID(id)
+		entity, err := entity.WithID(id)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Setting ID")
+		}
 		shouldInsert = true
 	} else {
 		entity, err := d.Get(id)
