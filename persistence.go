@@ -182,7 +182,7 @@ func (d *DatabaseDAO) Set(entity IdentifiableEntity) (Identifier, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Generating Identifier")
 		}
-		entity, err := entity.WithID(id)
+		entity, err = entity.WithID(id)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Setting ID")
 		}
