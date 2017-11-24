@@ -117,6 +117,7 @@ func (d *DatabaseDAO) GetAllEntities(p Pagination) ([]Entity, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Retrieving entities from database")
 	}
+	defer rows.Close()
 	entities, err := d.mapper.ToEntities(rows)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Map result set to entity")
@@ -132,6 +133,7 @@ func (d *DatabaseDAO) GetAllIDs(p Pagination) ([]Identifier, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Retrieving entities from database")
 	}
+	defer rows.Close()
 	identifiers, err := d.mapper.ToIdentifiers(rows)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Map result set to identifiers")
@@ -157,6 +159,7 @@ func (d *DatabaseDAO) Get(id Identifier) (Entity, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Retrieving entities from database")
 	}
+	defer rows.Close()
 	entities, err := d.mapper.ToEntities(rows)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Map result set to entity")
