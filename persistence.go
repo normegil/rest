@@ -112,6 +112,12 @@ func NewDatabaseDAO(db *sql.DB, mapper Mapper, queries Queries, idGenerator Iden
 	}, nil
 }
 
+func (d *DatabaseDAO) Close() {
+	for _, query := range d.queries {
+		query.Close()
+	}
+}
+
 func (d *DatabaseDAO) GetAllEntities(p Pagination) ([]Entity, error) {
 	rows, err := d.queries[getAllEntities].Query(p.Offset(), p.Limit())
 	if err != nil {
@@ -129,7 +135,9 @@ func (d *DatabaseDAO) GetAllEntities(p Pagination) ([]Entity, error) {
 }
 
 func (d *DatabaseDAO) GetAllIDs(p Pagination) ([]Identifier, error) {
-	rows, err := d.queries[getAllIDs].Query(p.Offset(), p.Limit())
+	queries := d.queries
+	getAllQuery := queries[getAllIDs]
+	rows, err := getAllQuery.Query(p.Offset(), p.Limit())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Retrieving entities from database")
 	}
