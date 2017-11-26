@@ -27,16 +27,16 @@ type DefaultController struct {
 
 const keyIdentifier = "id"
 
-func NewController(basePath string, dao DAO, emptyEntity IdentifiableEntity) Controller {
+func NewController(basePath string, dao DAO, emptyEntity IdentifiableEntity) *DefaultController {
 	c := &DefaultController{
 		DAO:           dao,
 		EmptyInstance: emptyEntity,
 	}
 	routes := []Route{
-		NewRoute("GET", basePath, c.GetAll),
-		NewRoute("GET", basePath+"/:"+keyIdentifier, c.Get),
-		NewRoute("PUT", basePath, c.Update),
-		NewRoute("DELETE", basePath+"/:"+keyIdentifier, c.Delete),
+		NewRoute("GET", "/"+basePath, c.GetAll),
+		NewRoute("GET", "/"+basePath+"/:"+keyIdentifier, c.Get),
+		NewRoute("PUT", "/"+basePath, c.Update),
+		NewRoute("DELETE", "/"+basePath+"/:"+keyIdentifier, c.Delete),
 	}
 	c.DefinedRoutes = routes
 	return c

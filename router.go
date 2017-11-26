@@ -13,7 +13,7 @@ type Router struct {
 	logger Logger
 }
 
-func New() *Router {
+func NewRouter() *Router {
 	return &Router{
 		Router: httprouter.New(),
 	}
@@ -47,7 +47,13 @@ func (r *Router) Register(ctrl Controller) error {
 	return nil
 }
 
-func (r *Router) Listen(port int, withMiddleware func(http.Handler) http.Handler) error {
+func (r *Router) Listen(port int) error {
+	return r.ListenWithMiddleware(port, func(h http.Handler) http.Handler {
+		return h
+	})
+}
+
+func (r *Router) ListenWithMiddleware(port int, withMiddleware func(http.Handler) http.Handler) error {
 	var handler http.Handler
 	handler = r.Router
 	if nil != r.logger {
