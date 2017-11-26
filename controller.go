@@ -18,19 +18,20 @@ type Controller interface {
 }
 
 type DefaultController struct {
-	Log           Logger
 	DAO           DAO
 	DefinedRoutes []Route
 	EmptyInstance IdentifiableEntity
 	ErrorHandler  resterrors.Handler
+	Logger        Logger
 }
 
 const keyIdentifier = "id"
 
-func NewController(basePath string, dao DAO, emptyEntity IdentifiableEntity) *DefaultController {
+func NewController(basePath string, dao DAO, errorHandler resterrors.Handler, emptyEntity IdentifiableEntity) *DefaultController {
 	c := &DefaultController{
 		DAO:           dao,
 		EmptyInstance: emptyEntity,
+		ErrorHandler:  errorHandler,
 	}
 	routes := []Route{
 		NewRoute("GET", "/"+basePath, c.GetAll),
@@ -171,10 +172,16 @@ func (c *DefaultController) Handle(w http.ResponseWriter, err error) {
 	e := c.ErrorHandler.Handle(w, err)
 	if nil != e {
 		newErr := errors.Wrapf(e, "Error while writing error response -{ %s }-", err.Error())
-		c.Log.Printf(newErr.Error())
+		c.log(newErr.Error())
 		fmt.Fprintf(w, newErr.Error())
 	} else {
-		c.Log.Printf(err.Error())
+		c.log(err.Error())
+	}
+}
+
+func (c *DefaultController) log(msg string, objects ...interface{}) {
+	if nil != c.Logger {
+		c.Logger.Printf(msg, objects...)
 	}
 }
 
