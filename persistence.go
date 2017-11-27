@@ -180,6 +180,9 @@ func (d *DatabaseDAO) Get(id Identifier) (Entity, error) {
 	if nbEntities > 1 {
 		return nil, fmt.Errorf("Expected only one entity identified by '%s' but got %d", id, nbEntities)
 	}
+	if nbEntities == 0 {
+		return nil, nil
+	}
 	return entities[0], nil
 }
 
