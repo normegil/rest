@@ -10,15 +10,15 @@ import (
 )
 
 type CollectionResponse struct {
-	Current            urlFormats.URL
-	First              urlFormats.URL
-	Last               urlFormats.URL
-	Previous           urlFormats.URL
-	Next               urlFormats.URL
-	Offset             int64
-	Limit              int64
-	TotalNumberOfItems int64
-	Items              []interface{}
+	Current            urlFormats.URL `json:"current"`
+	First              string         `json:"first,omitempty"`
+	Last               string         `json:"last,omitempty"`
+	Previous           string         `json:"previous,omitempty"`
+	Next               string         `json:"next,omitempty"`
+	Offset             int64          `json:"offset"`
+	Limit              int64          `json:"limit"`
+	TotalNumberOfItems int64          `json:"totalNumberOfItems"`
+	Items              []interface{}  `json:"items,omitempty"`
 }
 
 type CollectionResponseBuilder struct {
@@ -57,13 +57,21 @@ func (b *CollectionResponseBuilder) Build() (*CollectionResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	first, err := collectionURL(b.BaseURL, 0, pagination.Limit(), b.QueryParams)
-	if err != nil {
-		return nil, err
+	var firstCollectionURL string
+	if pagination.Offset() > 0 {
+		first, err := collectionURL(b.BaseURL, 0, pagination.Limit(), b.QueryParams)
+		if err != nil {
+			return nil, err
+		}
+		firstCollectionURL = first.String()
 	}
-	last, err := generateLastURL(b.BaseURL, pagination.Offset(), pagination.Limit(), b.MaxNBItems, b.QueryParams)
-	if err != nil {
-		return nil, err
+	var lastCollectionURL string
+	if pagination.Limit() < b.MaxNBItems {
+		last, err := generateLastURL(b.BaseURL, pagination.Offset(), pagination.Limit(), b.MaxNBItems, b.QueryParams)
+		if err != nil {
+			return nil, err
+		}
+		lastCollectionURL = last.String()
 	}
 	previous, err := generatePreviousURL(b.BaseURL, pagination.Offset(), pagination.Limit(), b.QueryParams)
 	if err != nil {
@@ -75,10 +83,10 @@ func (b *CollectionResponseBuilder) Build() (*CollectionResponse, error) {
 	}
 	return &CollectionResponse{
 		Current:            urlFormats.URL{current},
-		First:              urlFormats.URL{first},
-		Last:               urlFormats.URL{last},
-		Previous:           urlFormats.URL{previous},
-		Next:               urlFormats.URL{next},
+		First:              firstCollectionURL,
+		Last:               lastCollectionURL,
+		Previous:           previous.String(),
+		Next:               next.String(),
 		Offset:             pagination.Offset(),
 		Limit:              pagination.Limit(),
 		TotalNumberOfItems: b.MaxNBItems,
@@ -129,9 +137,9 @@ func collectionURL(baseURL url.URL, offset int64, limit int64, queryParams url.V
 	queryParams.Del("offset")
 	queryParams.Del("limit")
 	paramsStr := queryParams.Encode()
-	if limit > 0 || paramsStr != "" {
+	if (limit > 0) || paramsStr != "" {
 		collectionURL += "?"
-		if limit > 0 && limit != math.MaxInt64 {
+		if limit > 0 {
 			collectionURL += "offset=" + strconv.FormatInt(offset, 10) + "&limit=" + strconv.FormatInt(limit, 10)
 		}
 		if paramsStr != "" {

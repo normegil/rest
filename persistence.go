@@ -107,8 +107,9 @@ func NewDatabaseDAO(db *sql.DB, mapper Mapper, queries Queries, idGenerator Iden
 	}
 
 	return &DatabaseDAO{
-		mapper:  mapper,
-		queries: preparedQueries,
+		mapper:      mapper,
+		queries:     preparedQueries,
+		idGenerator: idGenerator,
 	}, nil
 }
 
@@ -155,7 +156,7 @@ func (d *DatabaseDAO) GetAllIDs(p Pagination) ([]Identifier, error) {
 func (d *DatabaseDAO) TotalNumberOfEntities() (int64, error) {
 	row := d.queries[size].QueryRow()
 	var nbItems int64
-	err := row.Scan(nbItems)
+	err := row.Scan(&nbItems)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Counting number of entities in database")
 	}
@@ -179,14 +180,15 @@ func (d *DatabaseDAO) Get(id Identifier) (Entity, error) {
 	if nbEntities > 1 {
 		return nil, fmt.Errorf("Expected only one entity identified by '%s' but got %d", id, nbEntities)
 	}
-	return entities, nil
+	return entities[0], nil
 }
 
 func (d *DatabaseDAO) Set(entity IdentifiableEntity) (Identifier, error) {
 	id := entity.ID()
 	shouldInsert := false
 	if nil == id {
-		id, err := d.idGenerator.Generate(entity)
+		generator := d.idGenerator
+		id, err := generator.Generate(entity)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Generating Identifier")
 		}
@@ -196,11 +198,11 @@ func (d *DatabaseDAO) Set(entity IdentifiableEntity) (Identifier, error) {
 		}
 		shouldInsert = true
 	} else {
-		entity, err := d.Get(id)
+		found, err := d.Get(id)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Checking if entity exist")
 		}
-		shouldInsert = nil == entity
+		shouldInsert = nil == found
 	}
 
 	s, err := d.mapper.ToSlice(entity)
@@ -219,7 +221,7 @@ func (d *DatabaseDAO) Set(entity IdentifiableEntity) (Identifier, error) {
 		}
 	}
 
-	return id, nil
+	return entity.ID(), nil
 }
 
 func (d *DatabaseDAO) Delete(id Identifier) error {

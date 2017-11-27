@@ -59,7 +59,7 @@ func (r *Router) ListenWithMiddleware(port int, withMiddleware func(http.Handler
 	if nil != r.logger {
 		handler = RequestLogger(r.logger, handler)
 	}
-	handler = URLContructor(withMiddleware(handler))
+	handler = URLContructor(DefaultHeaders(withMiddleware(handler)))
 
 	if err := http.ListenAndServe(":"+strconv.Itoa(port), handler); nil != err {
 		return errors.Wrapf(err, "Error while Listening on %d", port)

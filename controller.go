@@ -17,21 +17,26 @@ type Controller interface {
 	Routes() []Route
 }
 
+type Unmarshaller interface {
+	json.Unmarshaler
+	Entity() IdentifiableEntity
+}
+
 type DefaultController struct {
 	DAO           DAO
 	DefinedRoutes []Route
-	EmptyInstance IdentifiableEntity
 	ErrorHandler  resterrors.Handler
 	Logger        Logger
+	Unmarshaller  Unmarshaller
 }
 
 const keyIdentifier = "id"
 
-func NewController(basePath string, dao DAO, errorHandler resterrors.Handler, emptyEntity IdentifiableEntity) *DefaultController {
+func NewController(basePath string, dao DAO, errorHandler resterrors.Handler, unmarshaller Unmarshaller) *DefaultController {
 	c := &DefaultController{
-		DAO:           dao,
-		EmptyInstance: emptyEntity,
-		ErrorHandler:  errorHandler,
+		DAO:          dao,
+		ErrorHandler: errorHandler,
+		Unmarshaller: unmarshaller,
 	}
 	routes := []Route{
 		NewRoute("GET", "/"+basePath, c.GetAll),
@@ -108,6 +113,7 @@ func (c *DefaultController) GetAll(w http.ResponseWriter, r *http.Request, _ htt
 		c.Handle(w, errors.Wrapf(err, "Encoding response '%+v'", response))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, string(responseBytes))
 }
 
@@ -123,7 +129,8 @@ func (c *DefaultController) Get(w http.ResponseWriter, r *http.Request, params h
 		c.Handle(w, errors.Wrapf(err, "Encoding entity into json '%+v'", entity))
 		return
 	}
-	_, err = fmt.Fprint(w, jsonEntity)
+	w.Header().Set("Content-Type", "application/json")
+	_, err = fmt.Fprint(w, string(jsonEntity))
 	if err != nil {
 		c.Handle(w, errors.Wrapf(err, "Writing entity as response '%s'", string(jsonEntity)))
 		return
@@ -133,20 +140,19 @@ func (c *DefaultController) Get(w http.ResponseWriter, r *http.Request, params h
 
 func (c *DefaultController) Update(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Copy EmptyInstance to not modify it and only use it as reference
-	instance := c.EmptyInstance
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		c.Handle(w, errors.Wrapf(err, "Reading body"))
 		return
 	}
-	err = json.Unmarshal(bodyBytes, &instance)
+	err = json.Unmarshal(bodyBytes, c.Unmarshaller)
 	if err != nil {
 		c.Handle(w, errors.Wrapf(err, "Unmarshal %s", string(bodyBytes)))
 		return
 	}
-	id, err := c.DAO.Set(instance)
+	id, err := c.DAO.Set(c.Unmarshaller.Entity())
 	if err != nil {
-		c.Handle(w, errors.Wrapf(err, "Update '%+v'", instance))
+		c.Handle(w, errors.Wrapf(err, "Update '%+v'", c.Unmarshaller.Entity()))
 		return
 	}
 	baseURL, err := getBaseURL(r)
@@ -154,7 +160,9 @@ func (c *DefaultController) Update(w http.ResponseWriter, r *http.Request, _ htt
 		c.Handle(w, errors.Wrapf(err, "Get base request url from request"))
 		return
 	}
-	fmt.Fprintf(w, baseURL.String()+"/%s", id.String())
+	baseURLStr := baseURL.String()
+	idStr := id.String()
+	fmt.Fprintf(w, baseURLStr+"/%s", idStr)
 	return
 }
 
@@ -186,7 +194,7 @@ func (c *DefaultController) log(msg string, objects ...interface{}) {
 }
 
 func getBaseURL(r *http.Request) (*url.URL, error) {
-	return url.Parse(r.Host + r.URL.Path)
+	return url.Parse("http://" + r.Host + r.URL.Path)
 }
 
 type StringIdentifier string
