@@ -58,10 +58,10 @@ func (c DefaultController) BasePath() string {
 
 func (c *DefaultController) Routes() []Route {
 	defaultRoutes := []Route{
-		NewRoute(GET, "/"+c.basePath, c.GetAll),
-		NewRoute(GET, "/"+c.basePath+"/:"+keyIdentifier, c.Get),
-		NewRoute(PUT, "/"+c.basePath, c.Update),
-		NewRoute(DELETE, "/"+c.basePath+"/:"+keyIdentifier, c.Delete),
+		NewRoute(GET, Path("/"+c.basePath), c.GetAll),
+		NewRoute(GET, Path("/"+c.basePath+"/:"+keyIdentifier), c.Get),
+		NewRoute(PUT, Path("/"+c.basePath), c.Update),
+		NewRoute(DELETE, Path("/"+c.basePath+"/:"+keyIdentifier), c.Delete),
 	}
 
 	if nil == c.MiddlewareSetter {
@@ -235,7 +235,7 @@ func NewCORSController(controller Controller, allowedOrigin string) *CORSControl
 
 func (c *CORSController) Routes() []Route {
 	routes := c.Controller.Routes()
-	optRoute := NewRoute(OPTIONS, "/"+c.BasePath(), c.Options)
+	optRoute := NewRoute(OPTIONS, Path("/"+c.BasePath()), c.Options)
 	if nil != c.MiddlewareSetter {
 		optRoute = NewRoute(optRoute.Method(), optRoute.Path(), c.MiddlewareSetter(optRoute.Method(), optRoute.Path(), optRoute.handler))
 	}

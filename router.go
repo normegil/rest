@@ -6,6 +6,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
+	"fmt"
 )
 
 type Router struct {
@@ -41,7 +42,7 @@ func (r *Router) Register(ctrl Controller) error {
 		case PATCH:
 			r.Router.PATCH(string(route.Path()), route.Handler())
 		default:
-			return errors.New("HTTP Method not supported {method: " + route.Method() + "; path: " + route.Path() + "}")
+			return fmt.Errorf("HTTP Method not supported {method:%s;path:%s}", route.Method(), route.Path())
 		}
 	}
 	return nil
