@@ -24,12 +24,15 @@ type Unmarshaller interface {
 	Entity() IdentifiableEntity
 }
 
+type MiddlewareSetter func(method Method, path Path, handler httprouter.Handle) httprouter.Handle
+
 type DefaultController struct {
-	DAO          DAO
-	basePath     string
-	ErrorHandler resterrors.Handler
-	Logger       Logger
-	Unmarshaller Unmarshaller
+	DAO              DAO
+	basePath         string
+	ErrorHandler     resterrors.Handler
+	Logger           Logger
+	Unmarshaller     Unmarshaller
+	MiddlewareSetter MiddlewareSetter
 }
 
 const keyIdentifier = "id"
@@ -54,12 +57,22 @@ func (c DefaultController) BasePath() string {
 }
 
 func (c *DefaultController) Routes() []Route {
-	return []Route{
-		NewRoute("GET", "/"+c.basePath, c.GetAll),
-		NewRoute("GET", "/"+c.basePath+"/:"+keyIdentifier, c.Get),
-		NewRoute("PUT", "/"+c.basePath, c.Update),
-		NewRoute("DELETE", "/"+c.basePath+"/:"+keyIdentifier, c.Delete),
+	defaultRoutes := []Route{
+		NewRoute(GET, "/"+c.basePath, c.GetAll),
+		NewRoute(GET, "/"+c.basePath+"/:"+keyIdentifier, c.Get),
+		NewRoute(PUT, "/"+c.basePath, c.Update),
+		NewRoute(DELETE, "/"+c.basePath+"/:"+keyIdentifier, c.Delete),
 	}
+
+	if nil == c.MiddlewareSetter {
+		return defaultRoutes
+	}
+
+	routesWithMiddlewares := make([]Route, 0)
+	for _, route := range defaultRoutes {
+		routesWithMiddlewares = append(routesWithMiddlewares, NewRoute(route.Method(), route.Path(), c.MiddlewareSetter(route.Method(), route.Path(), route.Handler())))
+	}
+	return routesWithMiddlewares
 }
 
 func (c *DefaultController) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -209,7 +222,8 @@ func getBaseURL(r *http.Request) (*url.URL, error) {
 
 type CORSController struct {
 	Controller
-	allowedOrigin string
+	MiddlewareSetter MiddlewareSetter
+	allowedOrigin    string
 }
 
 func NewCORSController(controller Controller, allowedOrigin string) *CORSController {
@@ -221,14 +235,18 @@ func NewCORSController(controller Controller, allowedOrigin string) *CORSControl
 
 func (c *CORSController) Routes() []Route {
 	routes := c.Controller.Routes()
-	return append(routes, NewRoute("OPTIONS", "/" + c.BasePath(), c.Options))
+	optRoute := NewRoute(OPTIONS, "/"+c.BasePath(), c.Options)
+	if nil != c.MiddlewareSetter {
+		optRoute = NewRoute(optRoute.Method(), optRoute.Path(), c.MiddlewareSetter(optRoute.Method(), optRoute.Path(), optRoute.handler))
+	}
+	return append(routes, optRoute)
 }
 
 func (c CORSController) Options(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	routes := c.Routes()
 	methods := make([]string, 0)
 	for _, route := range routes {
-		methods = append(methods, route.Method())
+		methods = append(methods, string(route.Method()))
 	}
 	allMethods := strings.Join(methods, ",")
 	w.Header().Add("Allow", allMethods)

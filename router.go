@@ -26,20 +26,20 @@ func (r *Router) SetLogger(log Logger) {
 func (r *Router) Register(ctrl Controller) error {
 	for _, route := range ctrl.Routes() {
 		switch route.Method() {
-		case "HEAD":
-			r.Router.HEAD(route.Path(), route.Handler())
-		case "GET":
-			r.Router.GET(route.Path(), route.Handler())
-		case "POST":
-			r.Router.POST(route.Path(), route.Handler())
-		case "PUT":
-			r.Router.PUT(route.Path(), route.Handler())
-		case "DELETE":
-			r.Router.DELETE(route.Path(), route.Handler())
-		case "OPTIONS":
-			r.Router.OPTIONS(route.Path(), route.Handler())
-		case "PATCH":
-			r.Router.PATCH(route.Path(), route.Handler())
+		case HEAD:
+			r.Router.HEAD(string(route.Path()), route.Handler())
+		case GET:
+			r.Router.GET(string(route.Path()), route.Handler())
+		case POST:
+			r.Router.POST(string(route.Path()), route.Handler())
+		case PUT:
+			r.Router.PUT(string(route.Path()), route.Handler())
+		case DELETE:
+			r.Router.DELETE(string(route.Path()), route.Handler())
+		case OPTIONS:
+			r.Router.OPTIONS(string(route.Path()), route.Handler())
+		case PATCH:
+			r.Router.PATCH(string(route.Path()), route.Handler())
 		default:
 			return errors.New("HTTP Method not supported {method: " + route.Method() + "; path: " + route.Path() + "}")
 		}
