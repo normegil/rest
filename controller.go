@@ -11,10 +11,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/normegil/resterrors"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 type Controller interface {
 	Routes() []Route
+	BasePath() string
 }
 
 type Unmarshaller interface {
@@ -23,33 +25,41 @@ type Unmarshaller interface {
 }
 
 type DefaultController struct {
-	DAO           DAO
-	DefinedRoutes []Route
-	ErrorHandler  resterrors.Handler
-	Logger        Logger
-	Unmarshaller  Unmarshaller
+	DAO          DAO
+	basePath     string
+	ErrorHandler resterrors.Handler
+	Logger       Logger
+	Unmarshaller Unmarshaller
 }
 
 const keyIdentifier = "id"
 
+type StringIdentifier string
+
+func (s StringIdentifier) String() string {
+	return string(s)
+}
+
 func NewController(basePath string, dao DAO, errorHandler resterrors.Handler, unmarshaller Unmarshaller) *DefaultController {
-	c := &DefaultController{
+	return &DefaultController{
 		DAO:          dao,
+		basePath:     basePath,
 		ErrorHandler: errorHandler,
 		Unmarshaller: unmarshaller,
 	}
-	routes := []Route{
-		NewRoute("GET", "/"+basePath, c.GetAll),
-		NewRoute("GET", "/"+basePath+"/:"+keyIdentifier, c.Get),
-		NewRoute("PUT", "/"+basePath, c.Update),
-		NewRoute("DELETE", "/"+basePath+"/:"+keyIdentifier, c.Delete),
-	}
-	c.DefinedRoutes = routes
-	return c
+}
+
+func (c DefaultController) BasePath() string {
+	return c.basePath
 }
 
 func (c *DefaultController) Routes() []Route {
-	return c.DefinedRoutes
+	return []Route{
+		NewRoute("GET", "/"+c.basePath, c.GetAll),
+		NewRoute("GET", "/"+c.basePath+"/:"+keyIdentifier, c.Get),
+		NewRoute("PUT", "/"+c.basePath, c.Update),
+		NewRoute("DELETE", "/"+c.basePath+"/:"+keyIdentifier, c.Delete),
+	}
 }
 
 func (c *DefaultController) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -197,8 +207,32 @@ func getBaseURL(r *http.Request) (*url.URL, error) {
 	return url.Parse("http://" + r.Host + r.URL.Path)
 }
 
-type StringIdentifier string
+type CORSController struct {
+	Controller
+	allowedOrigin string
+}
 
-func (s StringIdentifier) String() string {
-	return string(s)
+func NewCORSController(controller Controller, allowedOrigin string) *CORSController {
+	return &CORSController{
+		Controller:    controller,
+		allowedOrigin: allowedOrigin,
+	}
+}
+
+func (c *CORSController) Routes() []Route {
+	routes := c.Controller.Routes()
+	return append(routes, NewRoute("OPTIONS", "/" + c.BasePath(), c.Options))
+}
+
+func (c CORSController) Options(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	routes := c.Routes()
+	methods := make([]string, 0)
+	for _, route := range routes {
+		methods = append(methods, route.Method())
+	}
+	allMethods := strings.Join(methods, ",")
+	w.Header().Add("Allow", allMethods)
+	w.Header().Add("Access-Control-Allow-Origin", c.allowedOrigin)
+	w.Header().Add("Access-Control-Allow-Methods", allMethods)
+	w.Header().Add("Access-Control-Allow-Headers", "*")
 }
