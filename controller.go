@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/normegil/resterrors"
 	"github.com/pkg/errors"
 	"strings"
 )
@@ -24,12 +23,16 @@ type Unmarshaller interface {
 	Entity() IdentifiableEntity
 }
 
+type ErrorHandler interface {
+	Handle(w http.ResponseWriter, err error) error
+}
+
 type MiddlewareSetter func(method Method, path Path, handler httprouter.Handle) httprouter.Handle
 
 type DefaultController struct {
 	DAO              DAO
 	basePath         string
-	ErrorHandler     resterrors.Handler
+	ErrorHandler     ErrorHandler
 	Logger           Logger
 	Unmarshaller     Unmarshaller
 	MiddlewareSetter MiddlewareSetter
@@ -43,7 +46,7 @@ func (s StringIdentifier) String() string {
 	return string(s)
 }
 
-func NewController(basePath string, dao DAO, errorHandler resterrors.Handler, unmarshaller Unmarshaller) *DefaultController {
+func NewController(basePath string, dao DAO, errorHandler ErrorHandler, unmarshaller Unmarshaller) *DefaultController {
 	return &DefaultController{
 		DAO:          dao,
 		basePath:     basePath,
