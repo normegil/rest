@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 )
 
 type Identifier interface {
@@ -43,7 +43,7 @@ type UUIDIdentifierGenerator struct {
 }
 
 func (g UUIDIdentifierGenerator) Generate(_ Entity) (Identifier, error) {
-	return uuid.NewV4(), nil
+	return uuid.NewV4()
 }
 
 type Queries interface {
