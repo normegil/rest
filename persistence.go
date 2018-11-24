@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
 )
 
 type Identifier interface {
